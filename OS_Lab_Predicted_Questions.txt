@@ -1,0 +1,2904 @@
+================================================================================
+                    OS LAB - PREDICTED EXAM QUESTIONS
+                    Additional Practice Questions for Mid-Sem
+================================================================================
+
+                            COMPLETE INDEX OF QUESTIONS
+================================================================================
+
+PART A: PROCESS-BASED PREDICTED QUESTIONS
+==========================================
+
+Q1.  Create a parent process that forks 3 children. Each child should display
+     its PID, PPID, and calculate the factorial of a number (5, 6, 7 
+     respectively). Parent should wait for all children and display "All 
+     children completed".
+
+Q2.  Write a program where parent creates a child. Parent generates prime 
+     numbers up to n and child generates perfect numbers up to n. Value of n 
+     should be read from user input.
+
+Q3.  Let parent create 2 children. First child counts vowels in a file, second
+     child counts consonants in the same file. Filename provided as command 
+     line argument.
+
+Q4.  Create a child process that executes a separate program to reverse a 
+     string. Parent should pass the string as command line argument to child 
+     program using exec().
+
+Q5.  Parent forks a child. Parent calculates sum of digits of a number, child
+     calculates product of digits of same number. Number taken from command 
+     line argument.
+
+Q6.  Write a program where parent creates 2 children working on same file. 
+     First child copies all lines starting with vowels to output1.txt, second 
+     child copies lines starting with consonants to output2.txt.
+
+Q7.  Create 3 children processes. First executes "ps", second executes "who",
+     third executes "whoami". Parent waits for all and displays completion 
+     message.
+
+Q8.  Parent creates a child. Child reads a file and counts total sentences 
+     (periods, question marks, exclamation marks). Parent counts total 
+     paragraphs (empty lines). Use same file for both.
+
+Q9.  Fork a child that executes a program to find sum of array elements. 
+     Array size and elements should be taken as input in the child program.
+     Use exec() to run the child program.
+
+Q10. Parent creates 2 children. First child sorts numbers in a file in 
+     ascending order and writes to sorted_asc.txt. Second child sorts in 
+     descending order and writes to sorted_desc.txt. Input filename from 
+     command line.
+
+
+PART B: THREAD-BASED PREDICTED QUESTIONS
+=========================================
+
+Q11. Create 3 threads. Thread 1 displays numbers 1-10, Thread 2 displays 
+     11-20, Thread 3 displays 21-30. Use pthread_join to ensure proper 
+     sequence.
+
+Q12. Create shared memory with a global array. Thread 1 fills array with 
+     squares of first n numbers (1²,2²,3²...). Thread 2 calculates their sum
+     and displays result. n taken from user input.
+
+Q13. Create 2 threads sharing a global string. Thread 1 counts uppercase 
+     letters, Thread 2 counts lowercase letters. Both display their counts.
+     String initialized in main as "Hello World Programming".
+
+Q14. Write a program with 3 threads accessing shared integer array of 10 
+     elements. Thread 1 finds maximum, Thread 2 finds minimum, Thread 3 finds
+     average. Array initialized in main.
+
+Q15. Create 2 threads. Thread 1 writes first n natural numbers to shared 
+     array. Thread 2 calculates product of all even numbers from that array.
+     Display results from both threads.
+
+Q16. Recursive thread creation where thread i creates thread i+1 only if i is
+     even, otherwise it just displays "Thread i: Odd, terminating". Create 
+     first 10 threads. n=10 from command line.
+
+Q17. Create shared global structure with fields: name, rollno, marks. Thread 1
+     reads data from user and fills structure. Thread 2 reads structure and 
+     displays if marks > 50 "Pass" else "Fail".
+
+Q18. Create 4 threads with shared counter starting at 0. Each thread 
+     increments counter by 10 and displays thread number with counter value.
+     Use pthread_join to see final counter value in main.
+
+Q19. Create 2 threads sharing a string array of 5 strings. Thread 1 counts 
+     total characters across all strings. Thread 2 finds the longest string
+     and displays it. Array initialized in main.
+
+Q20. Main program creates n threads based on command line argument. Each 
+     thread i displays "Thread i: Square = i²" and "Thread i: Cube = i³".
+     Main waits for all threads before exiting.
+
+
+PART C: MIXED/ADVANCED PREDICTED QUESTIONS
+===========================================
+
+Q21. Parent forks child. Both parent and child should display a countdown 
+     from 5 to 1 with 1 second delay between each number. Observe the 
+     interleaving. Use sleep(1).
+
+Q22. Create a program where parent forks 2 children. First child creates a 
+     thread that displays "Child 1 - Thread running". Second child executes 
+     'date' command. Parent waits for both children.
+
+Q23. Write program with 2 threads and 1 forked child process. Thread 1 and 
+     Thread 2 display their thread IDs. Then main forks a child that displays
+     its PID. Demonstrate difference between threads and processes.
+
+Q24. Parent creates child that executes a program to check if a number is 
+     palindrome. Pass number via command line to child program. Child program
+     should be separate file compiled as executable.
+
+Q25. Create 3 threads sharing global array of 15 integers. Thread 1 fills 
+     array with Fibonacci series. Thread 2 finds how many are prime. Thread 3
+     displays all prime numbers from array. Use proper joining sequence.
+
+
+================================================================================
+                    DETAILED SOLUTIONS WITH CODE
+================================================================================
+
+================================================================================
+                    PART A: PROCESS-BASED PREDICTED QUESTIONS
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 1: Multiple Children Calculating Factorials
+--------------------------------------------------------------------------------
+QUESTION:
+Create a parent process that forks 3 children. Each child should display its 
+PID, PPID, and calculate the factorial of a number (5, 6, 7 respectively). 
+Parent should wait for all children and display "All children completed".
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Parent creates 3 children, each calculates factorial
+Logic:
+  - Parent forks 3 children
+  - Child 1 calculates 5!, Child 2 calculates 6!, Child 3 calculates 7!
+  - Each displays PID, PPID, and result
+  - Parent waits for all and displays completion message
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+long factorial(int n) {
+    long result = 1;
+    for (int i = 2; i <= n; i++) {
+        result *= i;
+    }
+    return result;
+}
+
+int main() {
+    pid_t pid;
+    int numbers[] = {5, 6, 7};
+    int i;
+    
+    printf("Parent: Starting to create 3 children\n\n");
+    
+    for (i = 0; i < 3; i++) {
+        pid = fork();
+        
+        if (pid < 0) {
+            perror("fork failed");
+            return 1;
+        }
+        else if (pid == 0) {
+            // Child process
+            int num = numbers[i];
+            long fact = factorial(num);
+            
+            printf("Child %d:\n", i+1);
+            printf("  PID = %d\n", getpid());
+            printf("  PPID = %d\n", getppid());
+            printf("  Factorial of %d = %ld\n\n", num, fact);
+            
+            _exit(0);
+        }
+    }
+    
+    // Parent waits for all 3 children
+    for (i = 0; i < 3; i++) {
+        wait(NULL);
+    }
+    
+    printf("Parent: All children completed\n");
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q1_factorial.c -o pred_q1_factorial
+./pred_q1_factorial
+
+EXPECTED OUTPUT:
+Parent: Starting to create 3 children
+
+Child 1:
+  PID = 12345
+  PPID = 12344
+  Factorial of 5 = 120
+
+Child 2:
+  PID = 12346
+  PPID = 12344
+  Factorial of 6 = 720
+
+Child 3:
+  PID = 12347
+  PPID = 12344
+  Factorial of 7 = 5040
+
+Parent: All children completed
+
+(Note: PID values will vary)
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 2: Prime and Perfect Numbers Generation
+--------------------------------------------------------------------------------
+QUESTION:
+Write a program where parent creates a child. Parent generates prime numbers 
+up to n and child generates perfect numbers up to n. Value of n should be 
+read from user input.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Parent generates primes, child generates perfect numbers
+Logic:
+  - Read n from user
+  - Parent generates and displays prime numbers up to n
+  - Child generates and displays perfect numbers up to n
+  - Perfect number: sum of divisors equals the number (e.g., 6 = 1+2+3)
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int is_prime(int num) {
+    if (num < 2) return 0;
+    for (int i = 2; i * i <= num; i++) {
+        if (num % i == 0) return 0;
+    }
+    return 1;
+}
+
+int is_perfect(int num) {
+    if (num < 2) return 0;
+    int sum = 1;
+    for (int i = 2; i * i <= num; i++) {
+        if (num % i == 0) {
+            sum += i;
+            if (i != num / i) {
+                sum += num / i;
+            }
+        }
+    }
+    return (sum == num);
+}
+
+int main() {
+    int n;
+    pid_t pid;
+    
+    printf("Enter value of n: ");
+    scanf("%d", &n);
+    
+    if (n <= 0) {
+        printf("Error: n must be positive\n");
+        return 1;
+    }
+    
+    pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child: Generate perfect numbers
+        printf("\nChild: Perfect numbers up to %d:\n", n);
+        int found = 0;
+        for (int i = 2; i <= n; i++) {
+            if (is_perfect(i)) {
+                printf("%d ", i);
+                found = 1;
+            }
+        }
+        if (!found) printf("None found");
+        printf("\n");
+        _exit(0);
+    }
+    else {
+        // Parent: Generate prime numbers
+        printf("Parent: Prime numbers up to %d:\n", n);
+        for (int i = 2; i <= n; i++) {
+            if (is_prime(i)) {
+                printf("%d ", i);
+            }
+        }
+        printf("\n");
+        
+        wait(NULL);
+        printf("\nParent: Child completed\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q2_prime_perfect.c -o pred_q2_prime_perfect
+./pred_q2_prime_perfect
+
+EXPECTED OUTPUT:
+Enter value of n: 30
+Parent: Prime numbers up to 30:
+2 3 5 7 11 13 17 19 23 29 
+
+Child: Perfect numbers up to 30:
+6 28 
+
+Parent: Child completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 3: Count Vowels and Consonants in File
+--------------------------------------------------------------------------------
+QUESTION:
+Let parent create 2 children. First child counts vowels in a file, second 
+child counts consonants in the same file. Filename provided as command line 
+argument.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Two children - count vowels and consonants in file
+Logic:
+  - Parent creates 2 children
+  - Child 1 counts vowels (a,e,i,o,u - case insensitive)
+  - Child 2 counts consonants (alphabetic but not vowels)
+  - Filename from command line
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <ctype.h>
+
+int is_vowel(char ch) {
+    ch = tolower(ch);
+    return (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u');
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <filename>\n", argv[0]);
+        return 1;
+    }
+    
+    pid_t pid1, pid2;
+    
+    // Create first child - count vowels
+    pid1 = fork();
+    
+    if (pid1 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid1 == 0) {
+        // Child 1: Count vowels
+        FILE *fp = fopen(argv[1], "r");
+        if (fp == NULL) {
+            perror("Error opening file");
+            _exit(1);
+        }
+        
+        int vowels = 0;
+        char ch;
+        while ((ch = fgetc(fp)) != EOF) {
+            if (isalpha(ch) && is_vowel(ch)) {
+                vowels++;
+            }
+        }
+        
+        printf("Child 1: Total vowels = %d\n", vowels);
+        fclose(fp);
+        _exit(0);
+    }
+    
+    // Create second child - count consonants
+    pid2 = fork();
+    
+    if (pid2 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid2 == 0) {
+        // Child 2: Count consonants
+        FILE *fp = fopen(argv[1], "r");
+        if (fp == NULL) {
+            perror("Error opening file");
+            _exit(1);
+        }
+        
+        int consonants = 0;
+        char ch;
+        while ((ch = fgetc(fp)) != EOF) {
+            if (isalpha(ch) && !is_vowel(ch)) {
+                consonants++;
+            }
+        }
+        
+        printf("Child 2: Total consonants = %d\n", consonants);
+        fclose(fp);
+        _exit(0);
+    }
+    
+    // Parent waits for both children
+    wait(NULL);
+    wait(NULL);
+    printf("Parent: Both children completed\n");
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q3_vowel_consonant.c -o pred_q3_vowel_consonant
+echo "Hello World Programming" > test.txt
+./pred_q3_vowel_consonant test.txt
+
+EXPECTED OUTPUT:
+Child 1: Total vowels = 6
+Child 2: Total consonants = 13
+Parent: Both children completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 4: Reverse String Using exec()
+--------------------------------------------------------------------------------
+QUESTION:
+Create a child process that executes a separate program to reverse a string. 
+Parent should pass the string as command line argument to child program using 
+exec().
+
+CODE - Main Program (pred_q4_main.c):
+--------------------------------------------------------------------------------
+/*
+Program: Main - parent forks child to reverse string via exec
+Logic:
+  - Parent takes string input
+  - Forks child that executes separate reversal program
+  - String passed as command line argument to child program
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <string.h>
+
+int main() {
+    char str[256];
+    pid_t pid;
+    
+    printf("Enter a string to reverse: ");
+    scanf("%s", str);
+    
+    pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child executes reverse program
+        printf("Child: Executing reverse program\n");
+        execlp("./pred_q4_reverse", "pred_q4_reverse", str, NULL);
+        perror("exec failed");
+        return 1;
+    }
+    else {
+        // Parent waits
+        wait(NULL);
+        printf("Parent: Child program completed\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+CODE - Child Program (pred_q4_reverse.c):
+--------------------------------------------------------------------------------
+/*
+Program: Separate executable to reverse a string
+Logic:
+  - Takes string as command line argument
+  - Reverses it and displays
+*/
+
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Error: String not provided\n");
+        return 1;
+    }
+    
+    char str[256];
+    strcpy(str, argv[1]);
+    int len = strlen(str);
+    
+    printf("Original string: %s\n", str);
+    printf("Reversed string: ");
+    
+    for (int i = len - 1; i >= 0; i--) {
+        printf("%c", str[i]);
+    }
+    printf("\n");
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q4_reverse.c -o pred_q4_reverse
+gcc pred_q4_main.c -o pred_q4_main
+./pred_q4_main
+
+EXPECTED OUTPUT:
+Enter a string to reverse: Hello
+Child: Executing reverse program
+Original string: Hello
+Reversed string: olleH
+Parent: Child program completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 5: Sum and Product of Digits
+--------------------------------------------------------------------------------
+QUESTION:
+Parent forks a child. Parent calculates sum of digits of a number, child 
+calculates product of digits of same number. Number taken from command line 
+argument.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Parent finds sum of digits, child finds product
+Logic:
+  - Read number from command line
+  - Parent calculates sum of digits
+  - Child calculates product of digits
+  - Both display results
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <number>\n", argv[0]);
+        return 1;
+    }
+    
+    int num = atoi(argv[1]);
+    
+    if (num < 0) {
+        printf("Error: Please enter non-negative number\n");
+        return 1;
+    }
+    
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child: Calculate product of digits
+        int product = 1;
+        int temp = num;
+        
+        if (temp == 0) product = 0;
+        
+        while (temp > 0) {
+            product *= (temp % 10);
+            temp /= 10;
+        }
+        
+        printf("Child: Product of digits of %d = %d\n", num, product);
+        _exit(0);
+    }
+    else {
+        // Parent: Calculate sum of digits
+        int sum = 0;
+        int temp = num;
+        
+        while (temp > 0) {
+            sum += (temp % 10);
+            temp /= 10;
+        }
+        
+        printf("Parent: Sum of digits of %d = %d\n", num, sum);
+        
+        wait(NULL);
+        printf("Parent: Child completed\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q5_sum_product_digits.c -o pred_q5_sum_product_digits
+./pred_q5_sum_product_digits 1234
+
+EXPECTED OUTPUT:
+Parent: Sum of digits of 1234 = 10
+Child: Product of digits of 1234 = 24
+Parent: Child completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 6: Separate Lines by Starting Character
+--------------------------------------------------------------------------------
+QUESTION:
+Write a program where parent creates 2 children working on same file. First 
+child copies all lines starting with vowels to output1.txt, second child 
+copies lines starting with consonants to output2.txt.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Two children separate lines by first character
+Logic:
+  - Child 1 copies lines starting with vowels to output1.txt
+  - Child 2 copies lines starting with consonants to output2.txt
+  - Input filename from command line
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <ctype.h>
+#include <string.h>
+
+int is_vowel(char ch) {
+    ch = tolower(ch);
+    return (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u');
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <filename>\n", argv[0]);
+        return 1;
+    }
+    
+    pid_t pid1, pid2;
+    
+    // Create first child - vowel lines
+    pid1 = fork();
+    
+    if (pid1 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid1 == 0) {
+        // Child 1: Lines starting with vowels
+        FILE *fin = fopen(argv[1], "r");
+        FILE *fout = fopen("output1.txt", "w");
+        
+        if (fin == NULL || fout == NULL) {
+            perror("Error opening file");
+            _exit(1);
+        }
+        
+        char line[256];
+        int count = 0;
+        
+        while (fgets(line, sizeof(line), fin) != NULL) {
+            if (isalpha(line[0]) && is_vowel(line[0])) {
+                fputs(line, fout);
+                count++;
+            }
+        }
+        
+        printf("Child 1: Copied %d lines starting with vowels to output1.txt\n", count);
+        fclose(fin);
+        fclose(fout);
+        _exit(0);
+    }
+    
+    // Wait for first child
+    wait(NULL);
+    
+    // Create second child - consonant lines
+    pid2 = fork();
+    
+    if (pid2 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid2 == 0) {
+        // Child 2: Lines starting with consonants
+        FILE *fin = fopen(argv[1], "r");
+        FILE *fout = fopen("output2.txt", "w");
+        
+        if (fin == NULL || fout == NULL) {
+            perror("Error opening file");
+            _exit(1);
+        }
+        
+        char line[256];
+        int count = 0;
+        
+        while (fgets(line, sizeof(line), fin) != NULL) {
+            if (isalpha(line[0]) && !is_vowel(line[0])) {
+                fputs(line, fout);
+                count++;
+            }
+        }
+        
+        printf("Child 2: Copied %d lines starting with consonants to output2.txt\n", count);
+        fclose(fin);
+        fclose(fout);
+        _exit(0);
+    }
+    
+    // Parent waits for second child
+    wait(NULL);
+    printf("Parent: Both children completed\n");
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q6_separate_lines.c -o pred_q6_separate_lines
+cat > input.txt << EOF
+Apple is red
+Banana is yellow
+Orange is orange
+Grapes are purple
+EOF
+./pred_q6_separate_lines input.txt
+cat output1.txt
+cat output2.txt
+
+EXPECTED OUTPUT:
+Child 1: Copied 2 lines starting with vowels to output1.txt
+Child 2: Copied 2 lines starting with consonants to output2.txt
+Parent: Both children completed
+
+output1.txt contents:
+Apple is red
+Orange is orange
+
+output2.txt contents:
+Banana is yellow
+Grapes are purple
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 7: Execute Multiple System Commands
+--------------------------------------------------------------------------------
+QUESTION:
+Create 3 children processes. First executes "ps", second executes "who", 
+third executes "whoami". Parent waits for all and displays completion message.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Three children execute different system commands
+Logic:
+  - Parent creates 3 children
+  - Child 1: executes ps command
+  - Child 2: executes who command  
+  - Child 3: executes whoami command
+  - Parent waits for all
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    pid_t pid;
+    int i;
+    
+    printf("Parent: Creating 3 children to execute commands\n\n");
+    
+    for (i = 0; i < 3; i++) {
+        pid = fork();
+        
+        if (pid < 0) {
+            perror("fork failed");
+            return 1;
+        }
+        else if (pid == 0) {
+            // Child process
+            printf("Child %d (PID=%d): Executing command\n", i+1, getpid());
+            
+            switch(i) {
+                case 0:
+                    printf("--- ps output ---\n");
+                    execlp("ps", "ps", NULL);
+                    break;
+                case 1:
+                    printf("--- who output ---\n");
+                    execlp("who", "who", NULL);
+                    break;
+                case 2:
+                    printf("--- whoami output ---\n");
+                    execlp("whoami", "whoami", NULL);
+                    break;
+            }
+            
+            perror("exec failed");
+            return 1;
+        }
+    }
+    
+    // Parent waits for all 3 children
+    for (i = 0; i < 3; i++) {
+        wait(NULL);
+    }
+    
+    printf("\nParent: All 3 children completed execution\n");
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q7_system_commands.c -o pred_q7_system_commands
+./pred_q7_system_commands
+
+EXPECTED OUTPUT:
+Parent: Creating 3 children to execute commands
+
+Child 1 (PID=12345): Executing command
+--- ps output ---
+  PID TTY          TIME CMD
+12344 pts/0    00:00:00 bash
+12345 pts/0    00:00:00 ps
+
+Child 2 (PID=12346): Executing command
+--- who output ---
+user     pts/0        2025-10-25 10:30
+
+Child 3 (PID=12347): Executing command
+--- whoami output ---
+user
+
+Parent: All 3 children completed execution
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 8: Count Sentences and Paragraphs
+--------------------------------------------------------------------------------
+QUESTION:
+Parent creates a child. Child reads a file and counts total sentences 
+(periods, question marks, exclamation marks). Parent counts total paragraphs 
+(empty lines). Use same file for both.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Child counts sentences, parent counts paragraphs
+Logic:
+  - Parent counts paragraphs (separated by empty lines)
+  - Child counts sentences (., ?, !)
+  - Both work on same file
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <string.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <filename>\n", argv[0]);
+        return 1;
+    }
+    
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child: Count sentences
+        FILE *fp = fopen(argv[1], "r");
+        if (fp == NULL) {
+            perror("Error opening file");
+            _exit(1);
+        }
+        
+        int sentences = 0;
+        char ch;
+        
+        while ((ch = fgetc(fp)) != EOF) {
+            if (ch == '.' || ch == '?' || ch == '!') {
+                sentences++;
+            }
+        }
+        
+        printf("Child: Total sentences = %d\n", sentences);
+        fclose(fp);
+        _exit(0);
+    }
+    else {
+        // Parent: Count paragraphs
+        FILE *fp = fopen(argv[1], "r");
+        if (fp == NULL) {
+            perror("Error opening file");
+            return 1;
+        }
+        
+        int paragraphs = 0;
+        char line[256];
+        int empty_line_seen = 0;
+        int has_content = 0;
+        
+        while (fgets(line, sizeof(line), fp) != NULL) {
+            // Check if line is empty or whitespace only
+            int is_empty = 1;
+            for (int i = 0; line[i] != '\0'; i++) {
+                if (line[i] != ' ' && line[i] != '\t' && line[i] != '\n') {
+                    is_empty = 0;
+                    break;
+                }
+            }
+            
+            if (!is_empty) {
+                if (empty_line_seen || !has_content) {
+                    paragraphs++;
+                }
+                empty_line_seen = 0;
+                has_content = 1;
+            }
+            else {
+                empty_line_seen = 1;
+            }
+        }
+        
+        printf("Parent: Total paragraphs = %d\n", paragraphs);
+        fclose(fp);
+        
+        wait(NULL);
+        printf("Parent: Child completed\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q8_sentences_paragraphs.c -o pred_q8_sentences_paragraphs
+cat > sample.txt << EOF
+This is first paragraph. It has two sentences.
+
+This is second paragraph. Does it have questions? Yes!
+
+Third paragraph here.
+EOF
+./pred_q8_sentences_paragraphs sample.txt
+
+EXPECTED OUTPUT:
+Parent: Total paragraphs = 3
+Child: Total sentences = 5
+Parent: Child completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 9: Array Sum Using exec()
+--------------------------------------------------------------------------------
+QUESTION:
+Fork a child that executes a program to find sum of array elements. Array 
+size and elements should be taken as input in the child program. Use exec() 
+to run the child program.
+
+CODE - Main Program (pred_q9_main.c):
+--------------------------------------------------------------------------------
+/*
+Program: Main - forks child to execute array sum program
+Logic:
+  - Parent forks child
+  - Child executes separate program that takes array input and finds sum
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    printf("Parent: Forking child to calculate array sum\n");
+    
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child executes array sum program
+        printf("Child: Executing array sum program\n\n");
+        execlp("./pred_q9_arraysum", "pred_q9_arraysum", NULL);
+        perror("exec failed");
+        return 1;
+    }
+    else {
+        // Parent waits
+        wait(NULL);
+        printf("\nParent: Child program completed\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+CODE - Child Program (pred_q9_arraysum.c):
+--------------------------------------------------------------------------------
+/*
+Program: Calculate sum of array elements
+Logic:
+  - Read array size from user
+  - Read array elements
+  - Calculate and display sum
+*/
+
+#include <stdio.h>
+
+int main() {
+    int n, i, sum = 0;
+    
+    printf("Enter size of array: ");
+    scanf("%d", &n);
+    
+    if (n <= 0) {
+        printf("Error: Invalid array size\n");
+        return 1;
+    }
+    
+    int arr[n];
+    
+    printf("Enter %d elements:\n", n);
+    for (i = 0; i < n; i++) {
+        scanf("%d", &arr[i]);
+        sum += arr[i];
+    }
+    
+    printf("\nArray elements: ");
+    for (i = 0; i < n; i++) {
+        printf("%d ", arr[i]);
+    }
+    
+    printf("\nSum of array elements = %d\n", sum);
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q9_arraysum.c -o pred_q9_arraysum
+gcc pred_q9_main.c -o pred_q9_main
+./pred_q9_main
+
+EXPECTED OUTPUT:
+Parent: Forking child to calculate array sum
+Child: Executing array sum program
+
+Enter size of array: 5
+Enter 5 elements:
+10
+20
+30
+40
+50
+
+Array elements: 10 20 30 40 50 
+Sum of array elements = 150
+
+Parent: Child program completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 10: Sort File Numbers in Two Orders
+--------------------------------------------------------------------------------
+QUESTION:
+Parent creates 2 children. First child sorts numbers in a file in ascending 
+order and writes to sorted_asc.txt. Second child sorts in descending order 
+and writes to sorted_desc.txt. Input filename from command line.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Two children sort numbers in different orders
+Logic:
+  - Read numbers from input file
+  - Child 1 sorts ascending, writes to sorted_asc.txt
+  - Child 2 sorts descending, writes to sorted_desc.txt
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+void bubble_sort_asc(int arr[], int n) {
+    for (int i = 0; i < n-1; i++) {
+        for (int j = 0; j < n-i-1; j++) {
+            if (arr[j] > arr[j+1]) {
+                int temp = arr[j];
+                arr[j] = arr[j+1];
+                arr[j+1] = temp;
+            }
+        }
+    }
+}
+
+void bubble_sort_desc(int arr[], int n) {
+    for (int i = 0; i < n-1; i++) {
+        for (int j = 0; j < n-i-1; j++) {
+            if (arr[j] < arr[j+1]) {
+                int temp = arr[j];
+                arr[j] = arr[j+1];
+                arr[j+1] = temp;
+            }
+        }
+    }
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <filename>\n", argv[0]);
+        return 1;
+    }
+    
+    pid_t pid1, pid2;
+    
+    // Create first child - ascending sort
+    pid1 = fork();
+    
+    if (pid1 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid1 == 0) {
+        // Child 1: Ascending sort
+        FILE *fin = fopen(argv[1], "r");
+        if (fin == NULL) {
+            perror("Error opening input file");
+            _exit(1);
+        }
+        
+        int numbers[100], n = 0;
+        while (fscanf(fin, "%d", &numbers[n]) == 1) {
+            n++;
+        }
+        fclose(fin);
+        
+        bubble_sort_asc(numbers, n);
+        
+        FILE *fout = fopen("sorted_asc.txt", "w");
+        if (fout == NULL) {
+            perror("Error opening output file");
+            _exit(1);
+        }
+        
+        for (int i = 0; i < n; i++) {
+            fprintf(fout, "%d\n", numbers[i]);
+        }
+        fclose(fout);
+        
+        printf("Child 1: Sorted %d numbers in ascending order -> sorted_asc.txt\n", n);
+        _exit(0);
+    }
+    
+    // Wait for first child
+    wait(NULL);
+    
+    // Create second child - descending sort
+    pid2 = fork();
+    
+    if (pid2 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid2 == 0) {
+        // Child 2: Descending sort
+        FILE *fin = fopen(argv[1], "r");
+        if (fin == NULL) {
+            perror("Error opening input file");
+            _exit(1);
+        }
+        
+        int numbers[100], n = 0;
+        while (fscanf(fin, "%d", &numbers[n]) == 1) {
+            n++;
+        }
+        fclose(fin);
+        
+        bubble_sort_desc(numbers, n);
+        
+        FILE *fout = fopen("sorted_desc.txt", "w");
+        if (fout == NULL) {
+            perror("Error opening output file");
+            _exit(1);
+        }
+        
+        for (int i = 0; i < n; i++) {
+            fprintf(fout, "%d\n", numbers[i]);
+        }
+        fclose(fout);
+        
+        printf("Child 2: Sorted %d numbers in descending order -> sorted_desc.txt\n", n);
+        _exit(0);
+    }
+    
+    // Parent waits for second child
+    wait(NULL);
+    printf("Parent: Both children completed sorting\n");
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q10_sort_file.c -o pred_q10_sort_file
+cat > numbers.txt << EOF
+45
+12
+78
+23
+56
+34
+89
+EOF
+./pred_q10_sort_file numbers.txt
+cat sorted_asc.txt
+cat sorted_desc.txt
+
+EXPECTED OUTPUT:
+Child 1: Sorted 7 numbers in ascending order -> sorted_asc.txt
+Child 2: Sorted 7 numbers in descending order -> sorted_desc.txt
+Parent: Both children completed sorting
+
+sorted_asc.txt:
+12
+23
+34
+45
+56
+78
+89
+
+sorted_desc.txt:
+89
+78
+56
+45
+34
+23
+12
+
+================================================================================
+                    PART B: THREAD-BASED PREDICTED QUESTIONS
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 11: Three Threads Displaying Number Ranges
+--------------------------------------------------------------------------------
+QUESTION:
+Create 3 threads. Thread 1 displays numbers 1-10, Thread 2 displays 11-20, 
+Thread 3 displays 21-30. Use pthread_join to ensure proper sequence.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Three threads displaying different number ranges
+Logic:
+  - Thread 1: displays 1-10
+  - Thread 2: displays 11-20
+  - Thread 3: displays 21-30
+  - Use pthread_join to maintain sequence
+*/
+
+#include <stdio.h>
+#include <pthread.h>
+
+void* range_1_10(void* arg) {
+    printf("Thread 1: ");
+    for (int i = 1; i <= 10; i++) {
+        printf("%d ", i);
+    }
+    printf("\n");
+    return NULL;
+}
+
+void* range_11_20(void* arg) {
+    printf("Thread 2: ");
+    for (int i = 11; i <= 20; i++) {
+        printf("%d ", i);
+    }
+    printf("\n");
+    return NULL;
+}
+
+void* range_21_30(void* arg) {
+    printf("Thread 3: ");
+    for (int i = 21; i <= 30; i++) {
+        printf("%d ", i);
+    }
+    printf("\n");
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2, t3;
+    
+    printf("Main: Creating 3 threads for number ranges\n\n");
+    
+    if (pthread_create(&t1, NULL, range_1_10, NULL) != 0) {
+        printf("Error: failed to create thread 1\n");
+        return 1;
+    }
+    pthread_join(t1, NULL);
+    
+    if (pthread_create(&t2, NULL, range_11_20, NULL) != 0) {
+        printf("Error: failed to create thread 2\n");
+        return 1;
+    }
+    pthread_join(t2, NULL);
+    
+    if (pthread_create(&t3, NULL, range_21_30, NULL) != 0) {
+        printf("Error: failed to create thread 3\n");
+        return 1;
+    }
+    pthread_join(t3, NULL);
+    
+    printf("\nMain: All threads completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q11_three_ranges.c -o pred_q11_three_ranges -lpthread
+./pred_q11_three_ranges
+
+EXPECTED OUTPUT:
+Main: Creating 3 threads for number ranges
+
+Thread 1: 1 2 3 4 5 6 7 8 9 10 
+Thread 2: 11 12 13 14 15 16 17 18 19 20 
+Thread 3: 21 22 23 24 25 26 27 28 29 30 
+
+Main: All threads completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 12: Shared Array with Squares and Sum
+--------------------------------------------------------------------------------
+QUESTION:
+Create shared memory with a global array. Thread 1 fills array with squares 
+of first n numbers (1²,2²,3²...). Thread 2 calculates their sum and displays 
+result. n taken from user input.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Thread 1 fills squares, Thread 2 calculates sum
+Logic:
+  - Global array shared between threads
+  - Thread 1: fills array with 1², 2², 3², ... n²
+  - Thread 2: calculates sum of all squares
+  - n from user input
+*/
+
+#include <stdio.h>
+#include <pthread.h>
+
+int squares[100];
+int n, total_sum;
+
+void* fill_squares(void* arg) {
+    printf("Thread 1: Filling array with squares\n");
+    
+    for (int i = 0; i < n; i++) {
+        squares[i] = (i + 1) * (i + 1);
+    }
+    
+    printf("Thread 1: Array = ");
+    for (int i = 0; i < n; i++) {
+        printf("%d ", squares[i]);
+    }
+    printf("\n");
+    
+    return NULL;
+}
+
+void* calculate_sum(void* arg) {
+    total_sum = 0;
+    
+    for (int i = 0; i < n; i++) {
+        total_sum += squares[i];
+    }
+    
+    printf("Thread 2: Sum of all squares = %d\n", total_sum);
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+    
+    printf("Enter value of n: ");
+    scanf("%d", &n);
+    
+    if (n <= 0 || n > 100) {
+        printf("Error: n must be between 1 and 100\n");
+        return 1;
+    }
+    
+    if (pthread_create(&t1, NULL, fill_squares, NULL) != 0) {
+        printf("Error: failed to create thread 1\n");
+        return 1;
+    }
+    pthread_join(t1, NULL);
+    
+    if (pthread_create(&t2, NULL, calculate_sum, NULL) != 0) {
+        printf("Error: failed to create thread 2\n");
+        return 1;
+    }
+    pthread_join(t2, NULL);
+    
+    printf("Main: Both threads completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q12_squares_sum.c -o pred_q12_squares_sum -lpthread
+./pred_q12_squares_sum
+
+EXPECTED OUTPUT:
+Enter value of n: 5
+Thread 1: Filling array with squares
+Thread 1: Array = 1 4 9 16 25 
+Thread 2: Sum of all squares = 55
+Main: Both threads completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 13: Count Uppercase and Lowercase Letters
+--------------------------------------------------------------------------------
+QUESTION:
+Create 2 threads sharing a global string. Thread 1 counts uppercase letters, 
+Thread 2 counts lowercase letters. Both display their counts. String 
+initialized in main as "Hello World Programming".
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Two threads count uppercase and lowercase letters
+Logic:
+  - Global string shared between threads
+  - Thread 1: counts uppercase letters
+  - Thread 2: counts lowercase letters
+  - String: "Hello World Programming"
+*/
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <pthread.h>
+
+char shared_string[100] = "Hello World Programming";
+
+void* count_uppercase(void* arg) {
+    int count = 0;
+    
+    for (int i = 0; shared_string[i] != '\0'; i++) {
+        if (isupper(shared_string[i])) {
+            count++;
+        }
+    }
+    
+    printf("Thread 1: Uppercase letters = %d\n", count);
+    return NULL;
+}
+
+void* count_lowercase(void* arg) {
+    int count = 0;
+    
+    for (int i = 0; shared_string[i] != '\0'; i++) {
+        if (islower(shared_string[i])) {
+            count++;
+        }
+    }
+    
+    printf("Thread 2: Lowercase letters = %d\n", count);
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+    
+    printf("String: \"%s\"\n\n", shared_string);
+    
+    if (pthread_create(&t1, NULL, count_uppercase, NULL) != 0) {
+        printf("Error: failed to create thread 1\n");
+        return 1;
+    }
+    
+    if (pthread_create(&t2, NULL, count_lowercase, NULL) != 0) {
+        printf("Error: failed to create thread 2\n");
+        return 1;
+    }
+    
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    
+    printf("\nMain: Both threads completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q13_count_case.c -o pred_q13_count_case -lpthread
+./pred_q13_count_case
+
+EXPECTED OUTPUT:
+String: "Hello World Programming"
+
+Thread 1: Uppercase letters = 3
+Thread 2: Lowercase letters = 17
+
+Main: Both threads completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 14: Find Max, Min, Average of Array
+--------------------------------------------------------------------------------
+QUESTION:
+Write a program with 3 threads accessing shared integer array of 10 elements. 
+Thread 1 finds maximum, Thread 2 finds minimum, Thread 3 finds average. 
+Array initialized in main.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Three threads find max, min, average
+Logic:
+  - Shared array of 10 integers
+  - Thread 1: finds maximum
+  - Thread 2: finds minimum
+  - Thread 3: finds average
+*/
+
+#include <stdio.h>
+#include <pthread.h>
+
+int arr[10] = {23, 45, 12, 67, 89, 34, 56, 78, 90, 11};
+int max_val, min_val;
+double avg_val;
+
+void* find_maximum(void* arg) {
+    max_val = arr[0];
+    
+    for (int i = 1; i < 10; i++) {
+        if (arr[i] > max_val) {
+            max_val = arr[i];
+        }
+    }
+    
+    printf("Thread 1: Maximum = %d\n", max_val);
+    return NULL;
+}
+
+void* find_minimum(void* arg) {
+    min_val = arr[0];
+    
+    for (int i = 1; i < 10; i++) {
+        if (arr[i] < min_val) {
+            min_val = arr[i];
+        }
+    }
+    
+    printf("Thread 2: Minimum = %d\n", min_val);
+    return NULL;
+}
+
+void* find_average(void* arg) {
+    int sum = 0;
+    
+    for (int i = 0; i < 10; i++) {
+        sum += arr[i];
+    }
+    
+    avg_val = sum / 10.0;
+    
+    printf("Thread 3: Average = %.2f\n", avg_val);
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2, t3;
+    
+    printf("Array: ");
+    for (int i = 0; i < 10; i++) {
+        printf("%d ", arr[i]);
+    }
+    printf("\n\n");
+    
+    if (pthread_create(&t1, NULL, find_maximum, NULL) != 0) {
+        printf("Error: failed to create thread 1\n");
+        return 1;
+    }
+    
+    if (pthread_create(&t2, NULL, find_minimum, NULL) != 0) {
+        printf("Error: failed to create thread 2\n");
+        return 1;
+    }
+    
+    if (pthread_create(&t3, NULL, find_average, NULL) != 0) {
+        printf("Error: failed to create thread 3\n");
+        return 1;
+    }
+    
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    pthread_join(t3, NULL);
+    
+    printf("\nMain: All threads completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q14_max_min_avg.c -o pred_q14_max_min_avg -lpthread
+./pred_q14_max_min_avg
+
+EXPECTED OUTPUT:
+Array: 23 45 12 67 89 34 56 78 90 11 
+
+Thread 1: Maximum = 90
+Thread 2: Minimum = 11
+Thread 3: Average = 50.50
+
+Main: All threads completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 15: Product of Even Numbers
+--------------------------------------------------------------------------------
+QUESTION:
+Create 2 threads. Thread 1 writes first n natural numbers to shared array. 
+Thread 2 calculates product of all even numbers from that array. Display 
+results from both threads.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Thread 1 writes naturals, Thread 2 finds even product
+Logic:
+  - Thread 1: fills array with 1,2,3...n
+  - Thread 2: calculates product of even numbers only
+  - n from user input
+*/
+
+#include <stdio.h>
+#include <pthread.h>
+
+int numbers[100];
+int n;
+long long product;
+
+void* fill_naturals(void* arg) {
+    printf("Thread 1: Writing first %d natural numbers\n", n);
+    
+    for (int i = 0; i < n; i++) {
+        numbers[i] = i + 1;
+    }
+    
+    printf("Thread 1: Array = ");
+    for (int i = 0; i < n; i++) {
+        printf("%d ", numbers[i]);
+    }
+    printf("\n");
+    
+    return NULL;
+}
+
+void* calculate_even_product(void* arg) {
+    product = 1;
+    int count = 0;
+    
+    printf("Thread 2: Even numbers = ");
+    for (int i = 0; i < n; i++) {
+        if (numbers[i] % 2 == 0) {
+            printf("%d ", numbers[i]);
+            product *= numbers[i];
+            count++;
+        }
+    }
+    
+    if (count == 0) {
+        printf("None");
+        product = 0;
+    }
+    
+    printf("\nThread 2: Product of even numbers = %lld\n", product);
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+    
+    printf("Enter value of n: ");
+    scanf("%d", &n);
+    
+    if (n <= 0 || n > 100) {
+        printf("Error: n must be between 1 and 100\n");
+        return 1;
+    }
+    
+    if (pthread_create(&t1, NULL, fill_naturals, NULL) != 0) {
+        printf("Error: failed to create thread 1\n");
+        return 1;
+    }
+    pthread_join(t1, NULL);
+    
+    if (pthread_create(&t2, NULL, calculate_even_product, NULL) != 0) {
+        printf("Error: failed to create thread 2\n");
+        return 1;
+    }
+    pthread_join(t2, NULL);
+    
+    printf("\nMain: Both threads completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q15_even_product.c -o pred_q15_even_product -lpthread
+./pred_q15_even_product
+
+EXPECTED OUTPUT:
+Enter value of n: 8
+Thread 1: Writing first 8 natural numbers
+Thread 1: Array = 1 2 3 4 5 6 7 8 
+Thread 2: Even numbers = 2 4 6 8 
+Thread 2: Product of even numbers = 384
+
+Main: Both threads completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 16: Conditional Recursive Thread Creation
+--------------------------------------------------------------------------------
+QUESTION:
+Recursive thread creation where thread i creates thread i+1 only if i is even, 
+otherwise it just displays "Thread i: Odd, terminating". Create first 10 
+threads. n=10 from command line.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Conditional recursive thread creation
+Logic:
+  - Thread i creates thread i+1 only if i is even
+  - If i is odd, thread terminates with message
+  - Create first 10 threads (n from command line)
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
+
+int N;
+
+void* create_conditional(void* arg) {
+    int num = *(int*)arg;
+    
+    printf("Thread %d: Created (Thread ID = %lu)\n", num, pthread_self());
+    
+    if (num % 2 == 1) {
+        printf("Thread %d: Odd, terminating\n", num);
+        return NULL;
+    }
+    
+    if (num < N) {
+        pthread_t next;
+        int next_num = num + 1;
+        
+        printf("Thread %d: Even, creating thread %d\n", num, next_num);
+        
+        if (pthread_create(&next, NULL, create_conditional, &next_num) != 0) {
+            printf("Error: failed to create thread %d\n", next_num);
+            return NULL;
+        }
+        pthread_join(next, NULL);
+    }
+    
+    return NULL;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <number_of_threads>\n", argv[0]);
+        return 1;
+    }
+    
+    N = atoi(argv[1]);
+    
+    if (N <= 0) {
+        printf("Error: n must be positive\n");
+        return 1;
+    }
+    
+    pthread_t first;
+    int start = 1;
+    
+    printf("Main: Creating conditional recursive threads (n=%d)\n\n", N);
+    
+    if (pthread_create(&first, NULL, create_conditional, &start) != 0) {
+        printf("Error: failed to create first thread\n");
+        return 1;
+    }
+    pthread_join(first, NULL);
+    
+    printf("\nMain: All threads completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q16_conditional_threads.c -o pred_q16_conditional_threads -lpthread
+./pred_q16_conditional_threads 10
+
+EXPECTED OUTPUT:
+Main: Creating conditional recursive threads (n=10)
+
+Thread 1: Created (Thread ID = 140234567890123)
+Thread 1: Odd, terminating
+Thread 2: Created (Thread ID = 140234567891234)
+Thread 2: Even, creating thread 3
+Thread 3: Created (Thread ID = 140234567892345)
+Thread 3: Odd, terminating
+Thread 4: Created (Thread ID = 140234567893456)
+Thread 4: Even, creating thread 5
+Thread 5: Created (Thread ID = 140234567894567)
+Thread 5: Odd, terminating
+Thread 6: Created (Thread ID = 140234567895678)
+Thread 6: Even, creating thread 7
+Thread 7: Created (Thread ID = 140234567896789)
+Thread 7: Odd, terminating
+Thread 8: Created (Thread ID = 140234567897890)
+Thread 8: Even, creating thread 9
+Thread 9: Created (Thread ID = 140234567898901)
+Thread 9: Odd, terminating
+Thread 10: Created (Thread ID = 140234567899012)
+Thread 10: Even, creating thread 11
+
+Main: All threads completed
+
+(Note: Thread IDs will vary)
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 17: Shared Structure - Student Pass/Fail
+--------------------------------------------------------------------------------
+QUESTION:
+Create shared global structure with fields: name, rollno, marks. Thread 1 
+reads data from user and fills structure. Thread 2 reads structure and 
+displays if marks > 50 "Pass" else "Fail".
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Shared structure for student data
+Logic:
+  - Global structure with name, rollno, marks
+  - Thread 1: reads data from user
+  - Thread 2: checks pass/fail based on marks
+*/
+
+#include <stdio.h>
+#include <string.h>
+#include <pthread.h>
+
+struct Student {
+    char name[50];
+    int rollno;
+    int marks;
+};
+
+struct Student student;
+
+void* read_student_data(void* arg) {
+    printf("Thread 1: Reading student data\n");
+    
+    printf("Enter name: ");
+    scanf("%s", student.name);
+    
+    printf("Enter roll number: ");
+    scanf("%d", &student.rollno);
+    
+    printf("Enter marks: ");
+    scanf("%d", &student.marks);
+    
+    printf("Thread 1: Data read successfully\n");
+    return NULL;
+}
+
+void* check_result(void* arg) {
+    printf("\nThread 2: Checking result\n");
+    printf("Name: %s\n", student.name);
+    printf("Roll No: %d\n", student.rollno);
+    printf("Marks: %d\n", student.marks);
+    
+    if (student.marks > 50) {
+        printf("Result: Pass\n");
+    }
+    else {
+        printf("Result: Fail\n");
+    }
+    
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+    
+    if (pthread_create(&t1, NULL, read_student_data, NULL) != 0) {
+        printf("Error: failed to create thread 1\n");
+        return 1;
+    }
+    pthread_join(t1, NULL);
+    
+    if (pthread_create(&t2, NULL, check_result, NULL) != 0) {
+        printf("Error: failed to create thread 2\n");
+        return 1;
+    }
+    pthread_join(t2, NULL);
+    
+    printf("\nMain: Both threads completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q17_student_struct.c -o pred_q17_student_struct -lpthread
+./pred_q17_student_struct
+
+EXPECTED OUTPUT:
+Thread 1: Reading student data
+Enter name: John
+Enter roll number: 101
+Enter marks: 75
+Thread 1: Data read successfully
+
+Thread 2: Checking result
+Name: John
+Roll No: 101
+Marks: 75
+Result: Pass
+
+Main: Both threads completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 18: Shared Counter with Multiple Threads
+--------------------------------------------------------------------------------
+QUESTION:
+Create 4 threads with shared counter starting at 0. Each thread increments 
+counter by 10 and displays thread number with counter value. Use pthread_join 
+to see final counter value in main.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Four threads incrementing shared counter
+Logic:
+  - Shared counter starts at 0
+  - 4 threads, each increments by 10
+  - Each thread displays its number and counter value
+*/
+
+#include <stdio.h>
+#include <pthread.h>
+
+int counter = 0;
+
+void* increment_counter(void* arg) {
+    int thread_num = *(int*)arg;
+    
+    counter += 10;
+    
+    printf("Thread %d: Counter = %d\n", thread_num, counter);
+    return NULL;
+}
+
+int main() {
+    pthread_t threads[4];
+    int thread_nums[4] = {1, 2, 3, 4};
+    
+    printf("Initial counter = %d\n\n", counter);
+    
+    for (int i = 0; i < 4; i++) {
+        if (pthread_create(&threads[i], NULL, increment_counter, &thread_nums[i]) != 0) {
+            printf("Error: failed to create thread %d\n", i+1);
+            return 1;
+        }
+        pthread_join(threads[i], NULL);
+    }
+    
+    printf("\nMain: Final counter value = %d\n", counter);
+    printf("Main: All threads completed\n");
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q18_shared_counter.c -o pred_q18_shared_counter -lpthread
+./pred_q18_shared_counter
+
+EXPECTED OUTPUT:
+Initial counter = 0
+
+Thread 1: Counter = 10
+Thread 2: Counter = 20
+Thread 3: Counter = 30
+Thread 4: Counter = 40
+
+Main: Final counter value = 40
+Main: All threads completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 19: String Array Analysis
+--------------------------------------------------------------------------------
+QUESTION:
+Create 2 threads sharing a string array of 5 strings. Thread 1 counts total 
+characters across all strings. Thread 2 finds the longest string and displays 
+it. Array initialized in main.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Two threads analyze string array
+Logic:
+  - Shared array of 5 strings
+  - Thread 1: counts total characters
+  - Thread 2: finds longest string
+*/
+
+#include <stdio.h>
+#include <string.h>
+#include <pthread.h>
+
+char strings[5][50] = {
+    "Hello",
+    "Programming",
+    "Operating",
+    "System",
+    "Laboratory"
+};
+
+void* count_characters(void* arg) {
+    int total = 0;
+    
+    for (int i = 0; i < 5; i++) {
+        total += strlen(strings[i]);
+    }
+    
+    printf("Thread 1: Total characters across all strings = %d\n", total);
+    return NULL;
+}
+
+void* find_longest(void* arg) {
+    int max_len = 0;
+    int max_index = 0;
+    
+    for (int i = 0; i < 5; i++) {
+        int len = strlen(strings[i]);
+        if (len > max_len) {
+            max_len = len;
+            max_index = i;
+        }
+    }
+    
+    printf("Thread 2: Longest string = \"%s\" (length = %d)\n", 
+           strings[max_index], max_len);
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+    
+    printf("String array:\n");
+    for (int i = 0; i < 5; i++) {
+        printf("%d. %s\n", i+1, strings[i]);
+    }
+    printf("\n");
+    
+    if (pthread_create(&t1, NULL, count_characters, NULL) != 0) {
+        printf("Error: failed to create thread 1\n");
+        return 1;
+    }
+    
+    if (pthread_create(&t2, NULL, find_longest, NULL) != 0) {
+        printf("Error: failed to create thread 2\n");
+        return 1;
+    }
+    
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    
+    printf("\nMain: Both threads completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q19_string_array.c -o pred_q19_string_array -lpthread
+./pred_q19_string_array
+
+EXPECTED OUTPUT:
+String array:
+1. Hello
+2. Programming
+3. Operating
+4. System
+5. Laboratory
+
+Thread 1: Total characters across all strings = 45
+Thread 2: Longest string = "Programming" (length = 11)
+
+Main: Both threads completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 20: Multiple Threads - Square and Cube
+--------------------------------------------------------------------------------
+QUESTION:
+Main program creates n threads based on command line argument. Each thread i 
+displays "Thread i: Square = i²" and "Thread i: Cube = i³". Main waits for 
+all threads before exiting.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: n threads display square and cube
+Logic:
+  - Create n threads (n from command line)
+  - Each thread i displays its square and cube
+  - Main waits for all
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+void* display_square_cube(void* arg) {
+    int num = *(int*)arg;
+    int square = num * num;
+    int cube = num * num * num;
+    
+    printf("Thread %d: Square = %d\n", num, square);
+    printf("Thread %d: Cube = %d\n", num, cube);
+    
+    return NULL;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <n>\n", argv[0]);
+        return 1;
+    }
+    
+    int n = atoi(argv[1]);
+    
+    if (n <= 0) {
+        printf("Error: n must be positive\n");
+        return 1;
+    }
+    
+    pthread_t threads[n];
+    int thread_nums[n];
+    
+    printf("Creating %d threads\n\n", n);
+    
+    for (int i = 0; i < n; i++) {
+        thread_nums[i] = i + 1;
+        
+        if (pthread_create(&threads[i], NULL, display_square_cube, &thread_nums[i]) != 0) {
+            printf("Error: failed to create thread %d\n", i+1);
+            return 1;
+        }
+    }
+    
+    // Wait for all threads
+    for (int i = 0; i < n; i++) {
+        pthread_join(threads[i], NULL);
+    }
+    
+    printf("\nMain: All %d threads completed\n", n);
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q20_square_cube.c -o pred_q20_square_cube -lpthread
+./pred_q20_square_cube 5
+
+EXPECTED OUTPUT:
+Creating 5 threads
+
+Thread 1: Square = 1
+Thread 1: Cube = 1
+Thread 2: Square = 4
+Thread 2: Cube = 8
+Thread 3: Square = 9
+Thread 3: Cube = 27
+Thread 4: Square = 16
+Thread 4: Cube = 64
+Thread 5: Square = 25
+Thread 5: Cube = 125
+
+Main: All 5 threads completed
+
+================================================================================
+                PART C: MIXED/ADVANCED PREDICTED QUESTIONS
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 21: Countdown with Parent and Child
+--------------------------------------------------------------------------------
+QUESTION:
+Parent forks child. Both parent and child should display a countdown from 5 
+to 1 with 1 second delay between each number. Observe the interleaving. Use 
+sleep(1).
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Parent and child countdown with delays
+Logic:
+  - Both parent and child countdown from 5 to 1
+  - 1 second delay between each number
+  - Observe interleaving of outputs
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child countdown
+        printf("Child (PID=%d): Starting countdown\n", getpid());
+        
+        for (int i = 5; i >= 1; i--) {
+            printf("Child: %d\n", i);
+            sleep(1);
+        }
+        
+        printf("Child: Countdown complete!\n");
+        _exit(0);
+    }
+    else {
+        // Parent countdown
+        printf("Parent (PID=%d): Starting countdown\n", getpid());
+        
+        for (int i = 5; i >= 1; i--) {
+            printf("Parent: %d\n", i);
+            sleep(1);
+        }
+        
+        printf("Parent: Countdown complete!\n");
+        
+        wait(NULL);
+        printf("Parent: Child has finished\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q21_countdown.c -o pred_q21_countdown
+./pred_q21_countdown
+
+EXPECTED OUTPUT:
+Parent (PID=12344): Starting countdown
+Child (PID=12345): Starting countdown
+Parent: 5
+Child: 5
+Parent: 4
+Child: 4
+Parent: 3
+Child: 3
+Parent: 2
+Child: 2
+Parent: 1
+Child: 1
+Parent: Countdown complete!
+Child: Countdown complete!
+Parent: Child has finished
+
+(Note: Outputs may interleave differently depending on scheduling)
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 22: Combine Process and Thread
+--------------------------------------------------------------------------------
+QUESTION:
+Create a program where parent forks 2 children. First child creates a thread 
+that displays "Child 1 - Thread running". Second child executes 'date' 
+command. Parent waits for both children.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Combine processes and threads
+Logic:
+  - Parent creates 2 children
+  - Child 1 creates a thread
+  - Child 2 executes date command
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <pthread.h>
+
+void* thread_function(void* arg) {
+    printf("Child 1 - Thread running (Thread ID = %lu)\n", pthread_self());
+    return NULL;
+}
+
+int main() {
+    pid_t pid1, pid2;
+    
+    printf("Parent: Creating first child\n");
+    
+    // Create first child - with thread
+    pid1 = fork();
+    
+    if (pid1 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid1 == 0) {
+        // Child 1: Create thread
+        printf("Child 1 (PID=%d): Creating thread\n", getpid());
+        
+        pthread_t thread;
+        
+        if (pthread_create(&thread, NULL, thread_function, NULL) != 0) {
+            printf("Error: failed to create thread\n");
+            _exit(1);
+        }
+        
+        pthread_join(thread, NULL);
+        printf("Child 1: Thread completed\n");
+        _exit(0);
+    }
+    
+    printf("Parent: Creating second child\n");
+    
+    // Create second child - execute date
+    pid2 = fork();
+    
+    if (pid2 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid2 == 0) {
+        // Child 2: Execute date command
+        printf("Child 2 (PID=%d): Executing date command\n", getpid());
+        execlp("date", "date", NULL);
+        perror("exec failed");
+        _exit(1);
+    }
+    
+    // Parent waits for both children
+    wait(NULL);
+    wait(NULL);
+    
+    printf("Parent: Both children completed\n");
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q22_process_thread_combo.c -o pred_q22_process_thread_combo -lpthread
+./pred_q22_process_thread_combo
+
+EXPECTED OUTPUT:
+Parent: Creating first child
+Child 1 (PID=12345): Creating thread
+Parent: Creating second child
+Child 1 - Thread running (Thread ID = 140234567890123)
+Child 1: Thread completed
+Child 2 (PID=12346): Executing date command
+Sat Oct 25 10:30:45 IST 2025
+Parent: Both children completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 23: Demonstrate Threads vs Processes
+--------------------------------------------------------------------------------
+QUESTION:
+Write program with 2 threads and 1 forked child process. Thread 1 and Thread 2 
+display their thread IDs. Then main forks a child that displays its PID. 
+Demonstrate difference between threads and processes.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Demonstrate threads vs processes
+Logic:
+  - Create 2 threads displaying thread IDs
+  - Fork child process displaying PID
+  - Show difference between threads and processes
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <pthread.h>
+
+int shared_var = 100;
+
+void* thread_func(void* arg) {
+    int thread_num = *(int*)arg;
+    
+    printf("Thread %d: Thread ID = %lu\n", thread_num, pthread_self());
+    printf("Thread %d: Process ID = %d (same as main)\n", thread_num, getpid());
+    printf("Thread %d: Can see shared_var = %d\n", thread_num, shared_var);
+    
+    // Modify shared variable
+    shared_var += 10;
+    printf("Thread %d: Modified shared_var to %d\n\n", thread_num, shared_var);
+    
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+    int n1 = 1, n2 = 2;
+    
+    printf("Main Process ID = %d\n", getpid());
+    printf("Initial shared_var = %d\n\n", shared_var);
+    
+    printf("=== Creating Threads ===\n");
+    
+    if (pthread_create(&t1, NULL, thread_func, &n1) != 0) {
+        printf("Error: failed to create thread 1\n");
+        return 1;
+    }
+    pthread_join(t1, NULL);
+    
+    if (pthread_create(&t2, NULL, thread_func, &n2) != 0) {
+        printf("Error: failed to create thread 2\n");
+        return 1;
+    }
+    pthread_join(t2, NULL);
+    
+    printf("Main: After threads, shared_var = %d\n\n", shared_var);
+    
+    printf("=== Forking Child Process ===\n");
+    
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child process
+        printf("Child: Process ID = %d (different from parent)\n", getpid());
+        printf("Child: Parent Process ID = %d\n", getppid());
+        printf("Child: Has its own copy of shared_var = %d\n", shared_var);
+        
+        // Modify variable in child
+        shared_var = 999;
+        printf("Child: Modified its copy to %d (won't affect parent)\n", shared_var);
+        
+        _exit(0);
+    }
+    else {
+        // Parent process
+        wait(NULL);
+        printf("\nParent: After child, shared_var = %d (unchanged)\n", shared_var);
+        
+        printf("\n=== Key Differences ===\n");
+        printf("1. Threads share same memory (same PID, shared variables)\n");
+        printf("2. Processes have separate memory (different PIDs, separate copies)\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q23_threads_vs_processes.c -o pred_q23_threads_vs_processes -lpthread
+./pred_q23_threads_vs_processes
+
+EXPECTED OUTPUT:
+Main Process ID = 12344
+Initial shared_var = 100
+
+=== Creating Threads ===
+Thread 1: Thread ID = 140234567890123
+Thread 1: Process ID = 12344 (same as main)
+Thread 1: Can see shared_var = 100
+Thread 1: Modified shared_var to 110
+
+Thread 2: Thread ID = 140234567891234
+Thread 2: Process ID = 12344 (same as main)
+Thread 2: Can see shared_var = 110
+Thread 2: Modified shared_var to 120
+
+Main: After threads, shared_var = 120
+
+=== Forking Child Process ===
+Child: Process ID = 12345 (different from parent)
+Child: Parent Process ID = 12344
+Child: Has its own copy of shared_var = 120
+Child: Modified its copy to 999 (won't affect parent)
+
+Parent: After child, shared_var = 120 (unchanged)
+
+=== Key Differences ===
+1. Threads share same memory (same PID, shared variables)
+2. Processes have separate memory (different PIDs, separate copies)
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 24: Palindrome Check Using exec()
+--------------------------------------------------------------------------------
+QUESTION:
+Parent creates child that executes a program to check if a number is 
+palindrome. Pass number via command line to child program. Child program 
+should be separate file compiled as executable.
+
+CODE - Main Program (pred_q24_main.c):
+--------------------------------------------------------------------------------
+/*
+Program: Main - forks child to check palindrome
+Logic:
+  - Parent takes number input
+  - Forks child that executes separate palindrome checker
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    int num;
+    char num_str[20];
+    
+    printf("Enter a number to check for palindrome: ");
+    scanf("%d", &num);
+    
+    sprintf(num_str, "%d", num);
+    
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child executes palindrome checker
+        printf("Child: Executing palindrome checker\n\n");
+        execlp("./pred_q24_palindrome", "pred_q24_palindrome", num_str, NULL);
+        perror("exec failed");
+        return 1;
+    }
+    else {
+        // Parent waits
+        wait(NULL);
+        printf("\nParent: Child program completed\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+CODE - Child Program (pred_q24_palindrome.c):
+--------------------------------------------------------------------------------
+/*
+Program: Check if number is palindrome
+Logic:
+  - Takes number as command line argument
+  - Reverses it and checks if same as original
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Error: Number not provided\n");
+        return 1;
+    }
+    
+    int num = atoi(argv[1]);
+    int original = num;
+    int reversed = 0;
+    
+    printf("Checking if %d is palindrome...\n", num);
+    
+    while (num > 0) {
+        int digit = num % 10;
+        reversed = reversed * 10 + digit;
+        num /= 10;
+    }
+    
+    printf("Original: %d\n", original);
+    printf("Reversed: %d\n", reversed);
+    
+    if (original == reversed) {
+        printf("Result: %d is a PALINDROME\n", original);
+    }
+    else {
+        printf("Result: %d is NOT a palindrome\n", original);
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q24_palindrome.c -o pred_q24_palindrome
+gcc pred_q24_main.c -o pred_q24_main
+./pred_q24_main
+
+EXPECTED OUTPUT:
+Enter a number to check for palindrome: 121
+Child: Executing palindrome checker
+
+Checking if 121 is palindrome...
+Original: 121
+Reversed: 121
+Result: 121 is a PALINDROME
+
+Parent: Child program completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 25: Fibonacci, Prime Count, Prime Display
+--------------------------------------------------------------------------------
+QUESTION:
+Create 3 threads sharing global array of 15 integers. Thread 1 fills array 
+with Fibonacci series. Thread 2 finds how many are prime. Thread 3 displays 
+all prime numbers from array. Use proper joining sequence.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Three threads - Fibonacci, count primes, display primes
+Logic:
+  - Shared array of 15 integers
+  - Thread 1: fills with Fibonacci
+  - Thread 2: counts prime numbers
+  - Thread 3: displays prime numbers
+*/
+
+#include <stdio.h>
+#include <pthread.h>
+
+int fib_array[15];
+int prime_count;
+
+int is_prime(int num) {
+    if (num < 2) return 0;
+    for (int i = 2; i * i <= num; i++) {
+        if (num % i == 0) return 0;
+    }
+    return 1;
+}
+
+void* fill_fibonacci(void* arg) {
+    printf("Thread 1: Generating Fibonacci series\n");
+    
+    fib_array[0] = 1;
+    fib_array[1] = 1;
+    
+    for (int i = 2; i < 15; i++) {
+        fib_array[i] = fib_array[i-1] + fib_array[i-2];
+    }
+    
+    printf("Thread 1: Fibonacci array = ");
+    for (int i = 0; i < 15; i++) {
+        printf("%d ", fib_array[i]);
+    }
+    printf("\n");
+    
+    return NULL;
+}
+
+void* count_primes(void* arg) {
+    prime_count = 0;
+    
+    for (int i = 0; i < 15; i++) {
+        if (is_prime(fib_array[i])) {
+            prime_count++;
+        }
+    }
+    
+    printf("Thread 2: Number of primes = %d\n", prime_count);
+    return NULL;
+}
+
+void* display_primes(void* arg) {
+    printf("Thread 3: Prime numbers in array = ");
+    
+    int found = 0;
+    for (int i = 0; i < 15; i++) {
+        if (is_prime(fib_array[i])) {
+            printf("%d ", fib_array[i]);
+            found = 1;
+        }
+    }
+    
+    if (!found) printf("None");
+    printf("\n");
+    
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2, t3;
+    
+    printf("Main: Starting Fibonacci-Prime analysis\n\n");
+    
+    // Thread 1: Fill Fibonacci
+    if (pthread_create(&t1, NULL, fill_fibonacci, NULL) != 0) {
+        printf("Error: failed to create thread 1\n");
+        return 1;
+    }
+    pthread_join(t1, NULL);
+    
+    // Thread 2: Count primes
+    if (pthread_create(&t2, NULL, count_primes, NULL) != 0) {
+        printf("Error: failed to create thread 2\n");
+        return 1;
+    }
+    pthread_join(t2, NULL);
+    
+    // Thread 3: Display primes
+    if (pthread_create(&t3, NULL, display_primes, NULL) != 0) {
+        printf("Error: failed to create thread 3\n");
+        return 1;
+    }
+    pthread_join(t3, NULL);
+    
+    printf("\nMain: All threads completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc pred_q25_fib_prime.c -o pred_q25_fib_prime -lpthread
+./pred_q25_fib_prime
+
+EXPECTED OUTPUT:
+Main: Starting Fibonacci-Prime analysis
+
+Thread 1: Generating Fibonacci series
+Thread 1: Fibonacci array = 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 
+Thread 2: Number of primes = 7
+Thread 3: Prime numbers in array = 2 3 5 13 89 233 377 
+
+Main: All threads completed
+
+================================================================================
+
+                            EXAM PREPARATION TIPS
+================================================================================
+
+PROCESS QUESTIONS - KEY PATTERNS:
+---------------------------------
+1. Always check fork() return value (< 0 for error, 0 for child, PID for parent)
+2. Use wait() or waitpid() to avoid zombie processes
+3. Use _exit() in child processes, not exit()
+4. exec() replaces process - no code after it executes
+5. Parent and child have separate memory spaces
+
+THREAD QUESTIONS - KEY PATTERNS:
+---------------------------------
+1. Always check pthread_create() return value (non-zero means error)
+2. Use pthread_join() to wait for threads
+3. Threads share same memory - use global variables
+4. Compile with -lpthread flag
+5. Use pthread_exit() to terminate threads cleanly
+
+COMMON MISTAKES TO AVOID:
+-------------------------
+1. Forgetting to wait() for children → zombie processes
+2. Not joining threads → main exits before threads complete
+3. Forgetting -lpthread when compiling thread programs
+4. Using exit() instead of _exit() in child processes
+5. Not checking return values of system calls
+
+FILE OPERATIONS TIPS:
+---------------------
+1. Always check if fopen() returns NULL
+2. Close files with fclose() when done
+3. Use fgets() for line-by-line reading
+4. Use fgetc() for character-by-character reading
+5. Remember to check for EOF
+
+COMMAND LINE ARGUMENTS:
+-----------------------
+argc - number of arguments (including program name)
+argv[0] - program name
+argv[1], argv[2], ... - actual arguments
+Always check if argc has expected number of arguments
+
+================================================================================
+                                END OF DOCUMENT
+================================================================================

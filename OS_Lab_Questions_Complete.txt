@@ -1,0 +1,1509 @@
+================================================================================
+                    OS LAB QUESTIONS - COMPLETE REFERENCE
+                    Process Management & Thread Programming
+================================================================================
+
+TABLE OF CONTENTS:
+==================
+PART A: PROCESS-BASED QUESTIONS (Q1-Q9)
+PART B: ADDITIONAL PROCESS QUESTIONS
+PART C: THREAD-BASED QUESTIONS (Q1-Q7)
+
+================================================================================
+                            PART A: PROCESS QUESTIONS
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 1: Demonstrate fork() System Call
+--------------------------------------------------------------------------------
+QUESTION:
+Demonstrate fork() system call. Let the parent process display its pid, ppid 
+and a message 'I'm the parent'. Also let the child display its pid, ppid and 
+a message 'I'm the child'.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Basic fork demonstration - parent and child display PIDs
+*/
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+int main() {
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child process
+        printf("I'm the child\n");
+        printf("Child PID = %d, Child PPID = %d\n", getpid(), getppid());
+    }
+    else {
+        // Parent process
+        printf("I'm the parent\n");
+        printf("Parent PID = %d, Parent PPID = %d\n", getpid(), getppid());
+        printf("Child's PID = %d\n", pid);
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q1_fork_demo.c -o q1_fork_demo
+./q1_fork_demo
+
+EXPECTED OUTPUT:
+I'm the parent
+Parent PID = 1234, Parent PPID = 1000
+Child's PID = 1235
+I'm the child
+Child PID = 1235, Child PPID = 1234
+
+(Note: Actual PID numbers will vary)
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 2: Fork with exec - ls Command Execution
+--------------------------------------------------------------------------------
+QUESTION:
+Let the parent fork and let the child execute ls command. Observe the result 
+with and without having wait() system call in the parent.
+
+CODE (WITHOUT wait()):
+--------------------------------------------------------------------------------
+/*
+Program: Fork and exec ls command WITHOUT wait()
+*/
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+int main() {
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child executes ls
+        printf("Child: executing ls\n");
+        execlp("ls", "ls", NULL);
+        perror("exec failed");
+        return 1;
+    }
+    else {
+        // Parent continues WITHOUT waiting
+        printf("Parent: not waiting for child\n");
+        printf("Parent: exiting immediately\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+CODE (WITH wait()):
+--------------------------------------------------------------------------------
+/*
+Program: Fork and exec ls command WITH wait()
+*/
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child executes ls
+        printf("Child: executing ls\n");
+        execlp("ls", "ls", NULL);
+        perror("exec failed");
+        return 1;
+    }
+    else {
+        // Parent waits for child
+        printf("Parent: waiting for child to complete\n");
+        wait(NULL);
+        printf("Parent: child has completed\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+# Without wait:
+gcc q2_no_wait.c -o q2_no_wait
+./q2_no_wait
+
+# With wait:
+gcc q2_with_wait.c -o q2_with_wait
+./q2_with_wait
+
+EXPECTED OUTPUT (WITHOUT wait):
+Parent: not waiting for child
+Parent: exiting immediately
+[prompt returns immediately, ls output may appear after or intermixed]
+
+EXPECTED OUTPUT (WITH wait):
+Parent: waiting for child to complete
+Child: executing ls
+[ls output shows files in directory]
+Parent: child has completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 3: Multiple Children Executing Different Commands
+--------------------------------------------------------------------------------
+QUESTION:
+Let the parent create 4 children. Make them execute ls, ls -l, pwd and date 
+commands. (One child executes one command.)
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Parent creates 4 children executing different commands
+*/
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    pid_t pid;
+    int i;
+    
+    for (i = 0; i < 4; i++) {
+        pid = fork();
+        
+        if (pid < 0) {
+            perror("fork failed");
+            return 1;
+        }
+        else if (pid == 0) {
+            // Child process
+            printf("Child %d (PID=%d): executing command\n", i+1, getpid());
+            
+            switch(i) {
+                case 0:
+                    execlp("ls", "ls", NULL);
+                    break;
+                case 1:
+                    execlp("ls", "ls", "-l", NULL);
+                    break;
+                case 2:
+                    execlp("pwd", "pwd", NULL);
+                    break;
+                case 3:
+                    execlp("date", "date", NULL);
+                    break;
+            }
+            
+            perror("exec failed");
+            return 1;
+        }
+    }
+    
+    // Parent waits for all children
+    for (i = 0; i < 4; i++) {
+        wait(NULL);
+    }
+    
+    printf("Parent: all children completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q3_four_children.c -o q3_four_children
+./q3_four_children
+
+EXPECTED OUTPUT:
+Child 1 (PID=1236): executing command
+[ls output]
+Child 2 (PID=1237): executing command
+[ls -l detailed output]
+Child 3 (PID=1238): executing command
+/home/user/current/directory
+Child 4 (PID=1239): executing command
+Sat Oct 25 10:30:45 IST 2025
+Parent: all children completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 4: Child Generates Fibonacci Series
+--------------------------------------------------------------------------------
+QUESTION:
+Create a child through fork(). Let the child generate the fibonacci series 
+(1, 1, 2, 3, 5, 8…) upto n numbers. The value of n has to passed as a 
+command line argument.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Child generates Fibonacci series - n from command line
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <n>\n", argv[0]);
+        return 1;
+    }
+    
+    int n = atoi(argv[1]);
+    
+    if (n <= 0) {
+        printf("Error: n must be positive\n");
+        return 1;
+    }
+    
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child generates Fibonacci
+        printf("Child: Generating Fibonacci series for n=%d\n", n);
+        
+        int a = 1, b = 1, next, i;
+        
+        if (n >= 1) printf("%d ", a);
+        if (n >= 2) printf("%d ", b);
+        
+        for (i = 3; i <= n; i++) {
+            next = a + b;
+            printf("%d ", next);
+            a = b;
+            b = next;
+        }
+        printf("\n");
+        
+        _exit(0);
+    }
+    else {
+        // Parent waits
+        printf("Parent: waiting for child\n");
+        wait(NULL);
+        printf("Parent: child completed\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q4_fibonacci.c -o q4_fibonacci
+./q4_fibonacci 10
+
+EXPECTED OUTPUT:
+Parent: waiting for child
+Child: Generating Fibonacci series for n=10
+1 1 2 3 5 8 13 21 34 55 
+Parent: child completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 5: Odd and Even Series Generation
+--------------------------------------------------------------------------------
+QUESTION:
+Let the parent create a child using fork(). Let the parent generate an odd 
+series upto n numbers (1, 3, 5, 7, 9…) and let the child create an even 
+series upto n numbers (0, 2, 4, 6, 8 …). 
+(i) Pass the value of n as a command line argument. 
+(ii) Read the value of n from the user.
+
+CODE (i) - Command Line Argument:
+--------------------------------------------------------------------------------
+/*
+Program: Parent generates odd, child generates even - n from command line
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <n>\n", argv[0]);
+        return 1;
+    }
+    
+    int n = atoi(argv[1]);
+    
+    if (n <= 0) {
+        printf("Error: n must be positive\n");
+        return 1;
+    }
+    
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child generates even series
+        printf("Child: Even series: ");
+        for (int i = 0; i < n; i++) {
+            printf("%d ", i * 2);
+        }
+        printf("\n");
+        _exit(0);
+    }
+    else {
+        // Parent generates odd series
+        printf("Parent: Odd series: ");
+        for (int i = 0; i < n; i++) {
+            printf("%d ", 2 * i + 1);
+        }
+        printf("\n");
+        wait(NULL);
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+CODE (ii) - User Input:
+--------------------------------------------------------------------------------
+/*
+Program: Parent generates odd, child generates even - n from user input
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    int n;
+    
+    printf("Enter value of n: ");
+    scanf("%d", &n);
+    
+    if (n <= 0) {
+        printf("Error: n must be positive\n");
+        return 1;
+    }
+    
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child generates even series
+        printf("Child: Even series: ");
+        for (int i = 0; i < n; i++) {
+            printf("%d ", i * 2);
+        }
+        printf("\n");
+        _exit(0);
+    }
+    else {
+        // Parent generates odd series
+        printf("Parent: Odd series: ");
+        for (int i = 0; i < n; i++) {
+            printf("%d ", 2 * i + 1);
+        }
+        printf("\n");
+        wait(NULL);
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+# Version (i) - Command line:
+gcc q5_odd_even_cmd.c -o q5_odd_even_cmd
+./q5_odd_even_cmd 8
+
+# Version (ii) - User input:
+gcc q5_odd_even_input.c -o q5_odd_even_input
+./q5_odd_even_input
+
+EXPECTED OUTPUT (i):
+Parent: Odd series: 1 3 5 7 9 11 13 15 
+Child: Even series: 0 2 4 6 8 10 12 14 
+
+EXPECTED OUTPUT (ii):
+Enter value of n: 8
+Parent: Odd series: 1 3 5 7 9 11 13 15 
+Child: Even series: 0 2 4 6 8 10 12 14 
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 6: Odd/Even Series Using exec()
+--------------------------------------------------------------------------------
+QUESTION:
+Achieve the same as in Q(5) by using exec() system calls.
+
+CODE - Main Program (q6_main.c):
+--------------------------------------------------------------------------------
+/*
+Program: Main - parent odd series, child execs program for even
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <n>\n", argv[0]);
+        return 1;
+    }
+    
+    int n = atoi(argv[1]);
+    
+    if (n <= 0) {
+        printf("Error: n must be positive\n");
+        return 1;
+    }
+    
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child executes separate program for even series
+        execlp("./q6_even", "q6_even", argv[1], NULL);
+        perror("exec failed");
+        return 1;
+    }
+    else {
+        // Parent generates odd series
+        printf("Parent: Odd series: ");
+        for (int i = 0; i < n; i++) {
+            printf("%d ", 2 * i + 1);
+        }
+        printf("\n");
+        wait(NULL);
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+CODE - Child Program (q6_even.c):
+--------------------------------------------------------------------------------
+/*
+Program: Separate executable for even series generation
+*/
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Error: n not provided\n");
+        return 1;
+    }
+    
+    int n = atoi(argv[1]);
+    
+    printf("Child: Even series: ");
+    for (int i = 0; i < n; i++) {
+        printf("%d ", i * 2);
+    }
+    printf("\n");
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q6_even.c -o q6_even
+gcc q6_main.c -o q6_main
+./q6_main 8
+
+EXPECTED OUTPUT:
+Parent: Odd series: 1 3 5 7 9 11 13 15 
+Child: Even series: 0 2 4 6 8 10 12 14 
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 7: Two Children - Count Lines and Characters
+--------------------------------------------------------------------------------
+QUESTION:
+Let the parent create 2 children which work on a common sample file. Let one 
+child count the total number of lines in the file while the other counts the 
+total number of characters in the same file. Provide the filename as a command 
+line argument.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Two children - one counts lines, other counts characters
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <filename>\n", argv[0]);
+        return 1;
+    }
+    
+    pid_t pid1, pid2;
+    
+    // Create first child - count lines
+    pid1 = fork();
+    
+    if (pid1 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid1 == 0) {
+        // Child 1: Count lines
+        FILE *fp = fopen(argv[1], "r");
+        if (fp == NULL) {
+            perror("Error opening file");
+            _exit(1);
+        }
+        
+        int lines = 0;
+        char ch;
+        while ((ch = fgetc(fp)) != EOF) {
+            if (ch == '\n') lines++;
+        }
+        
+        printf("Child 1: Total lines = %d\n", lines);
+        fclose(fp);
+        _exit(0);
+    }
+    
+    // Create second child - count characters
+    pid2 = fork();
+    
+    if (pid2 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid2 == 0) {
+        // Child 2: Count characters
+        FILE *fp = fopen(argv[1], "r");
+        if (fp == NULL) {
+            perror("Error opening file");
+            _exit(1);
+        }
+        
+        int chars = 0;
+        while (fgetc(fp) != EOF) {
+            chars++;
+        }
+        
+        printf("Child 2: Total characters = %d\n", chars);
+        fclose(fp);
+        _exit(0);
+    }
+    
+    // Parent waits for both children
+    wait(NULL);
+    wait(NULL);
+    printf("Parent: both children completed\n");
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q7_lines_chars.c -o q7_lines_chars
+echo -e "Hello\nWorld\nTest" > sample.txt
+./q7_lines_chars sample.txt
+
+EXPECTED OUTPUT:
+Child 1: Total lines = 3
+Child 2: Total characters = 17
+Parent: both children completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 8: Two Children - Lowercase to Uppercase and Count 'a'
+--------------------------------------------------------------------------------
+QUESTION:
+Let the parent create 2 children which work on a common sample file. Let one 
+child convert all lowercase to uppercase in the file while the other counts 
+the total number of character 'a's in the same file. Provide the filename as 
+a command line argument.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Two children - one converts case, other counts 'a'
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <ctype.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <filename>\n", argv[0]);
+        return 1;
+    }
+    
+    pid_t pid1, pid2;
+    
+    // Create first child - count 'a'
+    pid1 = fork();
+    
+    if (pid1 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid1 == 0) {
+        // Child 1: Count 'a'
+        FILE *fp = fopen(argv[1], "r");
+        if (fp == NULL) {
+            perror("Error opening file");
+            _exit(1);
+        }
+        
+        int count = 0;
+        char ch;
+        while ((ch = fgetc(fp)) != EOF) {
+            if (ch == 'a' || ch == 'A') count++;
+        }
+        
+        printf("Child 1: Total 'a' count = %d\n", count);
+        fclose(fp);
+        _exit(0);
+    }
+    
+    // Wait for first child to finish before modifying file
+    wait(NULL);
+    
+    // Create second child - convert to uppercase
+    pid2 = fork();
+    
+    if (pid2 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid2 == 0) {
+        // Child 2: Convert to uppercase
+        FILE *fp = fopen(argv[1], "r");
+        FILE *temp = fopen("temp.txt", "w");
+        
+        if (fp == NULL || temp == NULL) {
+            perror("Error opening file");
+            _exit(1);
+        }
+        
+        char ch;
+        while ((ch = fgetc(fp)) != EOF) {
+            fputc(toupper(ch), temp);
+        }
+        
+        fclose(fp);
+        fclose(temp);
+        
+        // Replace original with temp
+        remove(argv[1]);
+        rename("temp.txt", argv[1]);
+        
+        printf("Child 2: Converted to uppercase\n");
+        _exit(0);
+    }
+    
+    // Parent waits for second child
+    wait(NULL);
+    printf("Parent: both operations completed\n");
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q8_case_convert.c -o q8_case_convert
+echo "banana apple" > test.txt
+./q8_case_convert test.txt
+cat test.txt
+
+EXPECTED OUTPUT:
+Child 1: Total 'a' count = 4
+Child 2: Converted to uppercase
+Parent: both operations completed
+
+File content after execution:
+BANANA APPLE
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 9: Two Children - Count Words and Invert Case
+--------------------------------------------------------------------------------
+QUESTION:
+Let the parent create 2 children which work on a common sample file. Let one 
+child count the total number of words in the file. Let the other child invert 
+the case of alphabets in the file. Provide the filename as a command line 
+argument.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Two children - one counts words, other inverts case
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <ctype.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <filename>\n", argv[0]);
+        return 1;
+    }
+    
+    pid_t pid1, pid2;
+    
+    // Create first child - count words
+    pid1 = fork();
+    
+    if (pid1 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid1 == 0) {
+        // Child 1: Count words
+        FILE *fp = fopen(argv[1], "r");
+        if (fp == NULL) {
+            perror("Error opening file");
+            _exit(1);
+        }
+        
+        int words = 0;
+        int in_word = 0;
+        char ch;
+        
+        while ((ch = fgetc(fp)) != EOF) {
+            if (isspace(ch)) {
+                in_word = 0;
+            }
+            else if (!in_word) {
+                in_word = 1;
+                words++;
+            }
+        }
+        
+        printf("Child 1: Total words = %d\n", words);
+        fclose(fp);
+        _exit(0);
+    }
+    
+    // Wait for first child
+    wait(NULL);
+    
+    // Create second child - invert case
+    pid2 = fork();
+    
+    if (pid2 < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid2 == 0) {
+        // Child 2: Invert case
+        FILE *fp = fopen(argv[1], "r");
+        FILE *temp = fopen("temp.txt", "w");
+        
+        if (fp == NULL || temp == NULL) {
+            perror("Error opening file");
+            _exit(1);
+        }
+        
+        char ch;
+        while ((ch = fgetc(fp)) != EOF) {
+            if (islower(ch)) {
+                fputc(toupper(ch), temp);
+            }
+            else if (isupper(ch)) {
+                fputc(tolower(ch), temp);
+            }
+            else {
+                fputc(ch, temp);
+            }
+        }
+        
+        fclose(fp);
+        fclose(temp);
+        
+        remove(argv[1]);
+        rename("temp.txt", argv[1]);
+        
+        printf("Child 2: Case inverted\n");
+        _exit(0);
+    }
+    
+    // Parent waits for second child
+    wait(NULL);
+    printf("Parent: both operations completed\n");
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q9_words_case.c -o q9_words_case
+echo "Hello World Test" > test.txt
+./q9_words_case test.txt
+cat test.txt
+
+EXPECTED OUTPUT:
+Child 1: Total words = 3
+Child 2: Case inverted
+Parent: both operations completed
+
+File content after execution:
+hELLO wORLD tEST
+
+================================================================================
+                    PART B: ADDITIONAL PROCESS QUESTIONS
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 10: Fork and Execute ls Command
+--------------------------------------------------------------------------------
+QUESTION:
+Fork a separate process and execute the ls command (fork and execlp system 
+commands to be used)
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Simple fork and exec for ls command
+*/
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child executes ls
+        printf("Child: Executing ls command\n");
+        execlp("ls", "ls", "-l", NULL);
+        perror("exec failed");
+        return 1;
+    }
+    else {
+        // Parent waits
+        printf("Parent: Waiting for child\n");
+        wait(NULL);
+        printf("Parent: Child completed\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q10_fork_ls.c -o q10_fork_ls
+./q10_fork_ls
+
+EXPECTED OUTPUT:
+Parent: Waiting for child
+Child: Executing ls command
+[ls -l output showing files]
+Parent: Child completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 11: Fork and Execute Custom Program
+--------------------------------------------------------------------------------
+QUESTION:
+Forking a child process and making the child process execute a program. The 
+program may be related to working with array, matrix, files or string 
+manipulations.
+
+CODE - Main Program (q11_main.c):
+--------------------------------------------------------------------------------
+/*
+Program: Main - forks child to execute matrix row sum program
+*/
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    printf("Parent: About to fork child to calculate matrix row sum\n");
+    
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child executes matrix program
+        printf("Child: Executing matrix row sum program\n");
+        execlp("./q11_matrix", "q11_matrix", NULL);
+        perror("exec failed");
+        return 1;
+    }
+    else {
+        // Parent waits
+        wait(NULL);
+        printf("Parent: Child program completed\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+CODE - Child Program (q11_matrix.c):
+--------------------------------------------------------------------------------
+/*
+Program: Calculate row sum of a matrix
+*/
+#include <stdio.h>
+
+int main() {
+    int rows, cols, i, j;
+    
+    printf("Enter number of rows and columns: ");
+    scanf("%d %d", &rows, &cols);
+    
+    int matrix[rows][cols];
+    
+    printf("Enter matrix elements:\n");
+    for (i = 0; i < rows; i++) {
+        for (j = 0; j < cols; j++) {
+            scanf("%d", &matrix[i][j]);
+        }
+    }
+    
+    printf("\nRow sums:\n");
+    for (i = 0; i < rows; i++) {
+        int sum = 0;
+        for (j = 0; j < cols; j++) {
+            sum += matrix[i][j];
+        }
+        printf("Row %d sum = %d\n", i+1, sum);
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q11_matrix.c -o q11_matrix
+gcc q11_main.c -o q11_main
+./q11_main
+
+EXPECTED OUTPUT:
+Parent: About to fork child to calculate matrix row sum
+Child: Executing matrix row sum program
+Enter number of rows and columns: 3 3
+Enter matrix elements:
+1 2 3
+4 5 6
+7 8 9
+
+Row sums:
+Row 1 sum = 6
+Row 2 sum = 15
+Row 3 sum = 24
+Parent: Child program completed
+
+================================================================================
+                        PART C: THREAD-BASED QUESTIONS
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 1: Two Threads Displaying Messages
+--------------------------------------------------------------------------------
+QUESTION:
+Create two threads in a main program, let the first thread execute a function 
+to display a message namely "this is thread one", similarly let the second 
+thread displays "this is thread two".
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Two threads displaying different messages
+*/
+#include <stdio.h>
+#include <pthread.h>
+
+void* thread_one(void* arg) {
+    printf("this is thread one\n");
+    return NULL;
+}
+
+void* thread_two(void* arg) {
+    printf("this is thread two\n");
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+    
+    if (pthread_create(&t1, NULL, thread_one, NULL) != 0) {
+        printf("Error: failed to create thread 1\n");
+        return 1;
+    }
+    
+    if (pthread_create(&t2, NULL, thread_two, NULL) != 0) {
+        printf("Error: failed to create thread 2\n");
+        return 1;
+    }
+    
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    
+    printf("main: both threads completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q1_two_threads.c -o q1_two_threads -lpthread
+./q1_two_threads
+
+EXPECTED OUTPUT:
+this is thread one
+this is thread two
+main: both threads completed
+
+(Note: Order of thread messages may vary)
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 2: Shared Memory String - Write, Read, Toggle Case
+--------------------------------------------------------------------------------
+QUESTION:
+Create a common shared memory area where in one thread writes a string termed 
+"Hello There"; the second thread reads the string and displays it on the 
+screen. Also the second string converts all lower case to upper case and vice 
+versa in the shared memory. Next the first thread will read this from the 
+shared memory and will output the same to the screen.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Shared memory string - write, read, toggle case
+*/
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <pthread.h>
+
+char shared_str[256];
+
+void* writer_thread(void* arg) {
+    strcpy(shared_str, "Hello There");
+    printf("Thread 1: wrote -> %s\n", shared_str);
+    return NULL;
+}
+
+void* toggler_thread(void* arg) {
+    printf("Thread 2: read  -> %s\n", shared_str);
+    
+    // Toggle case
+    for (int i = 0; shared_str[i] != '\0'; i++) {
+        if (islower(shared_str[i])) {
+            shared_str[i] = toupper(shared_str[i]);
+        }
+        else if (isupper(shared_str[i])) {
+            shared_str[i] = tolower(shared_str[i]);
+        }
+    }
+    
+    printf("Thread 2: toggled -> %s\n", shared_str);
+    return NULL;
+}
+
+void* first_reads_again(void* arg) {
+    printf("Thread 1 (again): final -> %s\n", shared_str);
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2, t1_again;
+    
+    // Thread 1 writes
+    if (pthread_create(&t1, NULL, writer_thread, NULL) != 0) {
+        printf("Error: failed to create writer thread\n");
+        return 1;
+    }
+    pthread_join(t1, NULL);
+    
+    // Thread 2 reads and toggles
+    if (pthread_create(&t2, NULL, toggler_thread, NULL) != 0) {
+        printf("Error: failed to create toggler thread\n");
+        return 1;
+    }
+    pthread_join(t2, NULL);
+    
+    // Thread 1 reads again
+    if (pthread_create(&t1_again, NULL, first_reads_again, NULL) != 0) {
+        printf("Error: failed to create reader thread\n");
+        return 1;
+    }
+    pthread_join(t1_again, NULL);
+    
+    printf("main: done\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q2_shared_string.c -o q2_shared_string -lpthread
+./q2_shared_string
+
+EXPECTED OUTPUT:
+Thread 1: wrote -> Hello There
+Thread 2: read  -> Hello There
+Thread 2: toggled -> hELLO tHERE
+Thread 1 (again): final -> hELLO tHERE
+main: done
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 3: Fibonacci Series in Child Process (Command Line)
+--------------------------------------------------------------------------------
+QUESTION:
+Write a c program using fork system call which generates Fibonacci sequence 
+in the child process. The number of sequence is to be provided in the command 
+line, ex: if 5 is provided the first 5 numbers of the Fibonacci series will 
+be output by the child process. Perform necessary error checking such that a 
+nonnegative number is not to be taken.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Child generates Fibonacci with error checking
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <n>\n", argv[0]);
+        return 1;
+    }
+    
+    int n = atoi(argv[1]);
+    
+    if (n < 0) {
+        printf("Error: n must be non-negative\n");
+        return 1;
+    }
+    
+    if (n == 0) {
+        printf("No Fibonacci numbers to display\n");
+        return 0;
+    }
+    
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        perror("fork failed");
+        return 1;
+    }
+    else if (pid == 0) {
+        // Child generates Fibonacci
+        printf("Child: Fibonacci series (first %d numbers):\n", n);
+        
+        int a = 1, b = 1, next;
+        
+        if (n >= 1) printf("%d ", a);
+        if (n >= 2) printf("%d ", b);
+        
+        for (int i = 3; i <= n; i++) {
+            next = a + b;
+            printf("%d ", next);
+            a = b;
+            b = next;
+        }
+        printf("\n");
+        
+        _exit(0);
+    }
+    else {
+        // Parent waits
+        wait(NULL);
+        printf("Parent: Child completed Fibonacci generation\n");
+    }
+    
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q3_fib_error_check.c -o q3_fib_error_check
+./q3_fib_error_check 8
+
+EXPECTED OUTPUT:
+Child: Fibonacci series (first 8 numbers):
+1 1 2 3 5 8 13 21 
+Parent: Child completed Fibonacci generation
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 4: Shared Memory - Write Numbers, Calculate Sum
+--------------------------------------------------------------------------------
+QUESTION:
+Next create a common shared memory area where in one thread writes a sequence 
+of numbers, the second thread reads the numbers, calculates their sum and 
+displays the result to the screen.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Shared memory - write numbers, calculate sum
+*/
+#include <stdio.h>
+#include <pthread.h>
+
+int numbers[256];
+int n, sum;
+
+void* writer_numbers(void* arg) {
+    printf("Enter how many numbers: ");
+    scanf("%d", &n);
+    
+    if (n < 0 || n > 256) {
+        n = 0;
+        return NULL;
+    }
+    
+    printf("Enter %d numbers:\n", n);
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &numbers[i]);
+    }
+    
+    printf("Thread 1: wrote %d numbers\n", n);
+    return NULL;
+}
+
+void* sum_numbers(void* arg) {
+    sum = 0;
+    for (int i = 0; i < n; i++) {
+        sum += numbers[i];
+    }
+    printf("Thread 2: sum = %d\n", sum);
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+    
+    // Thread 1 writes numbers
+    if (pthread_create(&t1, NULL, writer_numbers, NULL) != 0) {
+        printf("Error: failed to create writer thread\n");
+        return 1;
+    }
+    pthread_join(t1, NULL);
+    
+    // Thread 2 calculates sum
+    if (pthread_create(&t2, NULL, sum_numbers, NULL) != 0) {
+        printf("Error: failed to create sum thread\n");
+        return 1;
+    }
+    pthread_join(t2, NULL);
+    
+    printf("main: both threads completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q4_shared_numbers.c -o q4_shared_numbers -lpthread
+./q4_shared_numbers
+
+EXPECTED OUTPUT:
+Enter how many numbers: 5
+Enter 5 numbers:
+10
+20
+30
+40
+50
+Thread 1: wrote 5 numbers
+Thread 2: sum = 150
+main: both threads completed
+
+================================================================================
+
+--------------------------------------------------------------------------------
+QUESTION 5: Recursive Thread Creation
+--------------------------------------------------------------------------------
+QUESTION:
+Create n threads recursively where each thread creates the next thread. 
+The value of n is passed as a command line argument. Each thread should 
+display its number and thread ID.
+
+CODE:
+--------------------------------------------------------------------------------
+/*
+Program: Recursive thread creation (1..n)
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+int N;
+
+void* create_chain(void* arg) {
+    int num = *(int*)arg;
+    printf("Thread %d created. Thread ID = %lu\n", num, pthread_self());
+    
+    if (num < N) {
+        pthread_t next;
+        int next_num = num + 1;
+        
+        if (pthread_create(&next, NULL, create_chain, &next_num) != 0) {
+            printf("Error: failed to create thread %d\n", next_num);
+            return NULL;
+        }
+        pthread_join(next, NULL);
+    }
+    
+    return NULL;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <number_of_threads>\n", argv[0]);
+        return 1;
+    }
+    
+    N = atoi(argv[1]);
+    
+    if (N <= 0) {
+        printf("Error: enter positive n\n");
+        return 1;
+    }
+    
+    pthread_t first;
+    int start = 1;
+    
+    if (pthread_create(&first, NULL, create_chain, &start) != 0) {
+        printf("Error: failed to create first thread\n");
+        return 1;
+    }
+    pthread_join(first, NULL);
+    
+    printf("main: all threads completed\n");
+    return 0;
+}
+--------------------------------------------------------------------------------
+
+HOW TO COMPILE AND RUN:
+gcc q5_recursive_threads.c -o q5_recursive_threads -lpthread
+./q5_recursive_threads 5
+
+EXPECTED OUTPUT:
+Thread 1 created. Thread ID = 140234567890123
+Thread 2 created. Thread ID = 140234567891234
+Thread 3 created. Thread ID = 140234567892345
+Thread 4 created. Thread ID = 140234567893456
+Thread 5 created. Thread ID = 140234567894567
+main: all threads completed
+
+(Note: Thread IDs will vary)
+
+================================================================================
+
+                        QUICK REFERENCE - KEY CONCEPTS
+================================================================================
+
+PROCESS SYSTEM CALLS:
+---------------------
+fork()          - Create new process (returns 0 to child, PID to parent)
+getpid()        - Get current process ID
+getppid()       - Get parent process ID
+execlp()        - Execute a program (replace current process image)
+wait()          - Wait for any child process to terminate
+waitpid()       - Wait for specific child process
+_exit()         - Terminate process immediately
+
+THREAD FUNCTIONS:
+-----------------
+pthread_create()    - Create new thread
+pthread_join()      - Wait for thread to complete
+pthread_exit()      - Terminate calling thread
+pthread_self()      - Get current thread ID
+
+COMPILATION:
+------------
+Process programs: gcc program.c -o program
+Thread programs:  gcc program.c -o program -lpthread
+
+KEY DIFFERENCES:
+---------------
+Processes: Separate memory space, use fork/exec/wait
+Threads:   Shared memory space, use pthread_create/join/exit
+Processes: Need IPC for communication
+Threads:   Can use global variables directly
+
+ERROR CHECKING:
+--------------
+Always check return values:
+- fork() returns -1 on failure
+- pthread_create() returns non-zero on failure
+- File operations return NULL on failure
+
+COMMON PATTERNS:
+---------------
+1. Create → Execute → Wait (Processes)
+2. Create → Join (Threads)
+3. Global variables for shared data (Threads)
+4. Sequential execution using join/wait
+
+================================================================================
+                            END OF REFERENCE DOCUMENT
+================================================================================
